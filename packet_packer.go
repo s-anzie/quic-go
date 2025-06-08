@@ -917,20 +917,21 @@ func (p *packetPacker) PackPathProbePacket(destConnID protocol.ConnectionID, fra
 
 	payloadFrames := []ackhandler.Frame{frame}
 	var plLength protocol.ByteCount
-	for _, f := range payloadFrames {
-		plLength += f.Frame.Length(v)
-	}
-	payload := payload{
+	// The frame passed to PackPathProbePacket is an ackhandler.Frame, which has a Frame field of type wire.Frame
+	// So, frame.Frame.Length(v) is the correct way to get its length.
+	plLength = frame.Frame.Length(v)
+
+	payloadPacker := payload{ // Renamed to avoid conflict with outer scope `payload` in some contexts
 		frames: payloadFrames,
 		length: plLength,
 	}
 	// Path Probes are padded to MinInitialPacketSize
-	padding := protocol.MinInitialPacketSize - p.shortHeaderPacketLength(destConnID, pnLen, payload) - protocol.ByteCount(s.Overhead())
+	padding := protocol.MinInitialPacketSize - p.shortHeaderPacketLength(destConnID, pnLen, payloadPacker) - protocol.ByteCount(s.Overhead())
 	if padding < 0 {
 	    padding = 0
 	}
 
-	packet, err := p.appendShortHeaderPacket(buf, destConnID, pn, pnLen, s.KeyPhase(), payload, padding, protocol.MinInitialPacketSize, s, false, v)
+	packet, err := p.appendShortHeaderPacket(buf, destConnID, pn, pnLen, s.KeyPhase(), payloadPacker, padding, protocol.MinInitialPacketSize, s, false, v)
 	if err == nil {
 		if currentPath != nil && currentPath.pnSpace != nil {
 			currentPath.pnSpace.pnGen.PopPacketNumber()
@@ -1108,5 +1109,3 @@ var _ ackhandler.FrameHandler = emptyHandler{}
 
 func (emptyHandler) OnAcked(wire.Frame) {}
 func (emptyHandler) OnLost(wire.Frame)  {}
-
-[end of packet_packer.go]

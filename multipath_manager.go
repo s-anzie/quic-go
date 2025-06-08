@@ -48,9 +48,11 @@ type pathPacketNumberSpace struct {
 
 // multipathManager manages multiple paths for a QUIC connection.
 type multipathManager struct {
-	mutex sync.RWMutex
-	paths []*path // Slice of active and validating paths
+	mutex              sync.RWMutex
+	paths              []*path // Slice of active and validating paths
+	nextPathIDToAssign uint64  // Next path ID to be assigned for non-primary paths
 
+	// Dependencies needed for path operations, especially mtuDiscoverer initialization
 	rttStats    *utils.RTTStats
 	config      *Config
 	tracer      *logging.ConnectionTracer
@@ -65,14 +67,25 @@ func newMultipathManager(
 	perspective protocol.Perspective,
 ) *multipathManager {
 	return &multipathManager{
-		paths:       make([]*path, 0, 1), // Initial capacity for the primary path
-		rttStats:    rttStats,
-		config:      config,
-		tracer:      tracer,
-		perspective: perspective,
+		paths:              make([]*path, 0, 1), // Initial capacity for the primary path
+		nextPathIDToAssign: 1,                  // Path ID 0 is for the primary path
+		rttStats:           rttStats,
+		config:             config,
+		tracer:             tracer,
+		perspective:        perspective,
 	}
 }
 
+func (m *multipathManager) getNextPathID() uint64 {
+	m.mutex.Lock() // Ensure atomic read and increment
+	defer m.mutex.Unlock()
+	nextID := m.nextPathIDToAssign
+	m.nextPathIDToAssign++
+	return nextID
+}
+
+// addPath creates a new path, initializes its MTU discoverer, and adds it to the manager.
+// If a path with the same pathID already exists, it returns the existing path.
 func (m *multipathManager) addPath(remoteAddr net.Addr, pathID uint64, negotiatedMaxConnPaths uint64, peerMaxUDPPayloadSize protocol.ByteCount) (*path, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
