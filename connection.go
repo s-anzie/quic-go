@@ -2653,3 +2653,26 @@ func (c *Conn) NextConnection(ctx context.Context) (*Conn, error) {
 func estimateMaxPayloadSize(mtu protocol.ByteCount) protocol.ByteCount {
 	return mtu - 1 /* type byte */ - 20 /* maximum connection ID length */ - 16 /* tag size */
 }
+
+type ConnectionStats struct {
+	minRTT           time.Duration
+	latestRTT        time.Duration
+	smoothedRTT      time.Duration
+	meanDeviation    time.Duration
+	maxAckDelay      time.Duration
+	CongestionWindow uint64
+	BytesSent        uint64
+	BytesReceived    uint64
+	Retransmissions  uint64
+	LossRate         float64
+}
+
+func (c *Conn) GetStats() ConnectionStats {
+	return ConnectionStats{
+		minRTT:        c.rttStats.MinRTT(),
+		latestRTT:     c.rttStats.LatestRTT(),
+		smoothedRTT:   c.rttStats.SmoothedRTT(),
+		meanDeviation: c.rttStats.MeanDeviation(),
+		maxAckDelay:   c.rttStats.MaxAckDelay(),
+	}
+}
