@@ -2654,25 +2654,20 @@ func estimateMaxPayloadSize(mtu protocol.ByteCount) protocol.ByteCount {
 	return mtu - 1 /* type byte */ - 20 /* maximum connection ID length */ - 16 /* tag size */
 }
 
-type ConnectionStats struct {
-	minRTT           time.Duration
-	latestRTT        time.Duration
-	smoothedRTT      time.Duration
-	meanDeviation    time.Duration
-	maxAckDelay      time.Duration
-	CongestionWindow uint64
-	BytesSent        uint64
-	BytesReceived    uint64
-	Retransmissions  uint64
-	LossRate         float64
+type ConnectionRTTStats struct {
+	MinRTT        time.Duration
+	LatestRTT     time.Duration
+	SmoothedRTT   time.Duration
+	MeanDeviation time.Duration
+	MaxAckDelay   time.Duration
 }
 
-func (c *Conn) GetStats() ConnectionStats {
-	return ConnectionStats{
-		minRTT:        c.rttStats.MinRTT(),
-		latestRTT:     c.rttStats.LatestRTT(),
-		smoothedRTT:   c.rttStats.SmoothedRTT(),
-		meanDeviation: c.rttStats.MeanDeviation(),
-		maxAckDelay:   c.rttStats.MaxAckDelay(),
+func (c *Conn) GetRTTStats() ConnectionRTTStats {
+	return ConnectionRTTStats{
+		MinRTT:        c.rttStats.MinRTT(),
+		LatestRTT:     c.rttStats.LatestRTT(),
+		SmoothedRTT:   c.rttStats.SmoothedRTT(),
+		MeanDeviation: c.rttStats.MeanDeviation(),
+		MaxAckDelay:   c.rttStats.MaxAckDelay(),
 	}
 }
