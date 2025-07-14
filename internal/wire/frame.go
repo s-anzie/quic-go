@@ -14,7 +14,7 @@ type Frame interface {
 // See section 9.1 of RFC 9000.
 func IsProbingFrame(f Frame) bool {
 	switch f.(type) {
-	case *PathChallengeFrame, *PathResponseFrame, *NewConnectionIDFrame:
+	case *PathChallengeFrame, *PathResponseFrame, *NewConnectionIDFrame, *PathStatusAvailableFrame, *PathStatusBackupFrame:
 		return true
 	}
 	return false

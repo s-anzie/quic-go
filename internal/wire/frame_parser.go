@@ -35,6 +35,18 @@ const (
 	applicationCloseFrameType   = 0x1d
 	handshakeDoneFrameType      = 0x1e
 	resetStreamAtFrameType      = 0x24 // https://datatracker.ietf.org/doc/draft-ietf-quic-reliable-stream-reset/06/
+
+	// mp-quic frames
+	// https://datatracker.ietf.org/doc/html/draft-ietf-multipath
+	pathAckFrameType                = 0x15228c00
+	pathAbandonFrameType            = 0x15228c02
+	pathStatusBackupFrameType       = 0x15228c03
+	pathStatusAvailableFrameType    = 0x15228c04
+	pathNewConnectionIDFrameType    = 0x15228c05
+	pathRetireConnectionIDFrameType = 0x15228c06
+	maxPathIDFrameType              = 0x15228c0c
+	pathsBlockedFrameType           = 0x15228c0d
+	pathCIDsBlockedFrameType        = 0x15228c0e
 )
 
 var errUnknownFrameType = errors.New("unknown frame type")
@@ -144,6 +156,25 @@ func (p *FrameParser) parseFrame(b []byte, typ uint64, encLevel protocol.Encrypt
 			frame, l, err = parsePathResponseFrame(b, v)
 		case connectionCloseFrameType, applicationCloseFrameType:
 			frame, l, err = parseConnectionCloseFrame(b, typ, v)
+		//mp-quic frames
+		case pathAckFrameType:
+			frame, l, err = parsePathAckFrame(&PathAckFrame{}, b, p.ackDelayExponent)
+		case pathAbandonFrameType:
+			frame, l, err = parsePathAbandonFrame(b, v)
+		case pathStatusAvailableFrameType:
+			frame, l, err = parsePathStatusAvailableFrame(b, v)
+		case pathNewConnectionIDFrameType:
+			frame, l, err = parsePathNewConnectionIDFrame(b, v)
+		case pathRetireConnectionIDFrameType:
+			frame, l, err = parsePathRetireConnectionIDFrame(b, v)
+		case maxPathIDFrameType:
+			frame, l, err = parseMaxPathIDFrame(b, v)
+		case pathsBlockedFrameType:
+			frame, l, err = parsePathsBlockedFrame(b, v)
+		case pathCIDsBlockedFrameType:
+			frame, l, err = parsePathCIDsBlockedFrame(b, v)
+		case pathStatusBackupFrameType:
+			frame, l, err = parsePathStatusBackupFrame(b, v)
 		case handshakeDoneFrameType:
 			frame = &HandshakeDoneFrame{}
 		case 0x30, 0x31:
@@ -156,6 +187,7 @@ func (p *FrameParser) parseFrame(b []byte, typ uint64, encLevel protocol.Encrypt
 				return nil, 0, errUnknownFrameType
 			}
 			frame, l, err = parseResetStreamFrame(b, true, v)
+
 		default:
 			err = errUnknownFrameType
 		}

@@ -317,6 +317,11 @@ var newConnection = func(
 		RetrySourceConnectionID:   retrySrcConnID,
 		EnableResetStreamAt:       conf.EnableStreamResetPartialDelivery,
 	}
+	if s.config.EnableMultipath {
+		// As per the draft, a value of 1 means no multipath.
+		// We use a default of 2 to signal support.
+		params.InitialMaxPaths = protocol.DefaultInitialMaxPaths
+	}
 	if s.config.EnableDatagrams {
 		params.MaxDatagramFrameSize = wire.MaxDatagramSize
 	} else {
@@ -427,6 +432,11 @@ var newClientConnection = func(
 		ActiveConnectionIDLimit:   protocol.MaxActiveConnectionIDs,
 		InitialSourceConnectionID: srcConnID,
 		EnableResetStreamAt:       conf.EnableStreamResetPartialDelivery,
+	}
+	if conf.EnableMultipath {
+		// As per the draft, a value of 1 means no multipath.
+		// We use a default of 2 to signal support.
+		params.InitialMaxPaths = protocol.DefaultInitialMaxPaths
 	}
 	if s.config.EnableDatagrams {
 		params.MaxDatagramFrameSize = wire.MaxDatagramSize

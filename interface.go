@@ -182,7 +182,11 @@ type Config struct {
 	// Enable QUIC Stream Resets with Partial Delivery.
 	// See https://datatracker.ietf.org/doc/html/draft-ietf-quic-reliable-stream-reset-07.
 	EnableStreamResetPartialDelivery bool
-	Tracer                           func(context.Context, logging.Perspective, ConnectionID) *logging.ConnectionTracer
+	// EnableMultipath enables multipath support.
+	// This includes sending the initial_max_paths transport parameter.
+	// Defaults to false.
+	EnableMultipath bool
+	Tracer          func(context.Context, logging.Perspective, ConnectionID) *logging.ConnectionTracer
 }
 
 // ClientHelloInfo contains information about an incoming connection attempt.

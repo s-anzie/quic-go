@@ -27,6 +27,11 @@ const (
 	KeyUpdateError            TransportErrorCode = 0xe
 	AEADLimitReached          TransportErrorCode = 0xf
 	NoViablePathError         TransportErrorCode = 0x10
+	// mp-quic error codes
+	ApplicationAbandonPath   TransportErrorCode = 0x004150504142414e
+	PathResourceLimitReached TransportErrorCode = 0x0052534c494d4954
+	PathUnstableInterface    TransportErrorCode = 0x00554e5f494e5446
+	NoCIDAvailable           TransportErrorCode = 0x004e4f5f4349445f
 )
 
 func (e TransportErrorCode) IsCryptoError() bool {

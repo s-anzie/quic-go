@@ -9,28 +9,39 @@ import (
 	"github.com/quic-go/quic-go/quicvarint"
 )
 
-// A NewConnectionIDFrame is a NEW_CONNECTION_ID frame
-type NewConnectionIDFrame struct {
+type PathNewConnectionIDFrame struct {
+	PathID              uint64
 	SequenceNumber      uint64
 	RetirePriorTo       uint64
 	ConnectionID        protocol.ConnectionID
 	StatelessResetToken protocol.StatelessResetToken
 }
 
-func parseNewConnectionIDFrame(b []byte, _ protocol.Version) (*NewConnectionIDFrame, int, error) {
+func parsePathNewConnectionIDFrame(b []byte, _ protocol.Version) (*PathNewConnectionIDFrame, int, error) {
 	startLen := len(b)
+	f := &PathNewConnectionIDFrame{}
+	pathID, l, err := quicvarint.Parse(b)
+	if err != nil {
+		return nil, 0, replaceUnexpectedEOF(err)
+	}
+	b = b[l:]
+	f.PathID = pathID
+
 	seq, l, err := quicvarint.Parse(b)
 	if err != nil {
 		return nil, 0, replaceUnexpectedEOF(err)
 	}
 	b = b[l:]
+	f.SequenceNumber = seq
+
 	ret, l, err := quicvarint.Parse(b)
 	if err != nil {
 		return nil, 0, replaceUnexpectedEOF(err)
 	}
 	b = b[l:]
+	f.RetirePriorTo = ret
+
 	if ret > seq {
-		//nolint:staticcheck // SA1021: Retire Prior To is the name of the field
 		return nil, 0, fmt.Errorf("error Retire Prior To value (%d) larger than Sequence Number (%d)", ret, seq)
 	}
 	if len(b) == 0 {
@@ -47,21 +58,19 @@ func parseNewConnectionIDFrame(b []byte, _ protocol.Version) (*NewConnectionIDFr
 	if len(b) < connIDLen {
 		return nil, 0, io.EOF
 	}
-	frame := &NewConnectionIDFrame{
-		SequenceNumber: seq,
-		RetirePriorTo:  ret,
-		ConnectionID:   protocol.ParseConnectionID(b[:connIDLen]),
-	}
+	f.ConnectionID = protocol.ParseConnectionID(b[:connIDLen])
 	b = b[connIDLen:]
-	if len(b) < len(frame.StatelessResetToken) {
+	if len(b) < len(f.StatelessResetToken) {
 		return nil, 0, io.EOF
 	}
-	copy(frame.StatelessResetToken[:], b)
-	return frame, startLen - len(b) + len(frame.StatelessResetToken), nil
+	copy(f.StatelessResetToken[:], b)
+	return f, startLen - len(b) + len(f.StatelessResetToken), nil
 }
 
-func (f *NewConnectionIDFrame) Append(b []byte, _ protocol.Version) ([]byte, error) {
-	b = append(b, newConnectionIDFrameType)
+func (f *PathNewConnectionIDFrame) Append(b []byte, _ protocol.Version) ([]byte, error) {
+	typ := uint64(pathNewConnectionIDFrameType)
+	b = quicvarint.Append(b, typ)
+	b = quicvarint.Append(b, f.PathID)
 	b = quicvarint.Append(b, f.SequenceNumber)
 	b = quicvarint.Append(b, f.RetirePriorTo)
 	connIDLen := f.ConnectionID.Len()
@@ -74,7 +83,6 @@ func (f *NewConnectionIDFrame) Append(b []byte, _ protocol.Version) ([]byte, err
 	return b, nil
 }
 
-// Length of a written frame
-func (f *NewConnectionIDFrame) Length(protocol.Version) protocol.ByteCount {
-	return 1 + protocol.ByteCount(quicvarint.Len(f.SequenceNumber)+quicvarint.Len(f.RetirePriorTo)+1 /* connection ID length */ +f.ConnectionID.Len()) + 16
+func (f *PathNewConnectionIDFrame) Length(protocol.Version) protocol.ByteCount {
+	return 1 + protocol.ByteCount(quicvarint.Len(f.PathID)+quicvarint.Len(f.SequenceNumber)+quicvarint.Len(f.RetirePriorTo)+1+f.ConnectionID.Len()) + 16
 }

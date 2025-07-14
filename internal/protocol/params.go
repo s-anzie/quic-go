@@ -170,3 +170,5 @@ const Max0RTTQueues = 32
 // To avoid blocking, this value has to be smaller than MaxConnUnprocessedPackets.
 // To avoid packets being dropped as undecryptable by the connection, this value has to be smaller than MaxUndecryptablePackets.
 const Max0RTTQueueLen = 31
+
+const DefaultInitialMaxPaths = 2

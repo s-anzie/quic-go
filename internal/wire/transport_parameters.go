@@ -49,7 +49,7 @@ const (
 	resetStreamAtParameterID transportParameterID = 0x17f7586d2cb571
 
 	// Multipath QUIC) (https://quicwg.org/multipath/draft-ietf-quic-multipath.html)
-	maxPathsParameterID transportParameterID = 0x1f7495048d022512
+	initialinitialinitialMaxPathsParameterID transportParameterID = 0x1f7495048d022512
 )
 
 // PreferredAddress is the value encoding in the preferred_address transport parameter
@@ -91,7 +91,7 @@ type TransportParameters struct {
 	EnableResetStreamAt  bool               // https://datatracker.ietf.org/doc/draft-ietf-quic-reliable-stream-reset/06/
 
 	// Multipath QUIC
-	MaxPaths uint64
+	InitialMaxPaths uint64
 }
 
 // Unmarshal the transport parameters
@@ -118,7 +118,7 @@ func (p *TransportParameters) unmarshal(b []byte, sentBy protocol.Perspective, f
 	p.AckDelayExponent = protocol.DefaultAckDelayExponent
 	p.MaxAckDelay = protocol.DefaultMaxAckDelay
 	p.MaxDatagramFrameSize = protocol.InvalidByteCount
-	p.MaxPaths = 1 // Default value as per the multipath draft
+	p.InitialMaxPaths = 1 // Default value as per the multipath draft
 
 	for len(b) > 0 {
 		paramIDInt, l, err := quicvarint.Parse(b)
@@ -150,7 +150,7 @@ func (p *TransportParameters) unmarshal(b []byte, sentBy protocol.Perspective, f
 			initialMaxStreamsUniParameterID,
 			maxAckDelayParameterID,
 			maxDatagramFrameSizeParameterID,
-			maxPathsParameterID,
+			initialinitialinitialMaxPathsParameterID,
 			ackDelayExponentParameterID:
 			if err := p.readNumericTransportParameter(b, paramID, int(paramLen)); err != nil {
 				return err
@@ -342,8 +342,8 @@ func (p *TransportParameters) readNumericTransportParameter(b []byte, paramID tr
 		p.ActiveConnectionIDLimit = val
 	case maxDatagramFrameSizeParameterID:
 		p.MaxDatagramFrameSize = protocol.ByteCount(val)
-	case maxPathsParameterID:
-		p.MaxPaths = val
+	case initialinitialinitialMaxPathsParameterID:
+		p.InitialMaxPaths = val
 	default:
 		return fmt.Errorf("TransportParameter BUG: transport parameter %d not found", paramID)
 	}
@@ -456,8 +456,8 @@ func (p *TransportParameters) Marshal(pers protocol.Perspective) []byte {
 		b = quicvarint.Append(b, 0)
 	}
 	// Multipath QUIC.
-	if p.MaxPaths > 1 {
-		b = p.marshalVarintParam(b, maxPathsParameterID, p.MaxPaths)
+	if p.InitialMaxPaths > 1 {
+		b = p.marshalVarintParam(b, initialinitialinitialMaxPathsParameterID, p.InitialMaxPaths)
 	}
 
 	if pers == protocol.PerspectiveClient && len(AdditionalTransportParametersClient) > 0 {
